@@ -351,6 +351,19 @@ loadProfiles();
       document.getElementById("profiles").appendChild(card);
       event.target.reset();
     }
-  </script>
+  </script>  
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = 'https://qppbictsgfcuggplwxyi.supabase.co';
+
+const SUPABASE_KEY = 'sb_publishable_b4s6CzPu246wYj9CEuckLg_LK7pkPAE';
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
+  
 </body>
 </html>
