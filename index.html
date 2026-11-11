@@ -129,7 +129,7 @@ function filterProfiles() {
   const platform = document.getElementById("filter").value;
 
   const results = allProfiles.filter(p =>
-    (p.username || "").toLowerCase().includes(search) &&
+    (p.name || "").toLowerCase().includes(search) &&
     (!platform || p.platform === platform)
   );
 
@@ -146,7 +146,7 @@ function filterProfiles() {
     card.className = "profile";
 
     const name = document.createElement("h3");
-    name.textContent = p.username || "Creator";
+    name.textContent = p.name || "Creator";
 
     const network = document.createElement("p");
     network.textContent = p.platform || "";
