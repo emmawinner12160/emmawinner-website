@@ -416,7 +416,11 @@ async function loadProfiles() {
   });
 }
 
-loadProfiles();
+loadProfiles().catch(error => {
+  document.getElementById("profiles").textContent =
+    "Loading error: " + error.message;
+  console.error(error);
+});
 
 </script>
   
