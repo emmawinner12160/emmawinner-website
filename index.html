@@ -249,7 +249,11 @@ function filterProfiles() {
     container.appendChild(section);
   });
 }
-
+loadProfiles().catch(error => {
+  document.getElementById("profiles").textContent =
+    "Loading error: " + error.message;
+  console.error(error);
+});
 </script>
 </body>
 </html>
