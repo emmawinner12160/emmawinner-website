@@ -1,0 +1,428 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emmawinner - Social Media Discovery</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f6fb;color:#222}
+header{background:#172554;color:white;padding:22px 15px;text-align:center}
+header h1{margin:0;font-size:28px}
+header p{margin:8px 0 0}
+nav{background:#fff;padding:13px;text-align:center}
+nav a{color:#172554;text-decoration:none;margin:0 8px;font-weight:bold}
+main{max-width:650px;margin:20px auto;padding:15px}
+.card{background:white;padding:20px;border-radius:12px;margin-bottom:18px;box-shadow:0 2px 9px #00000012}
+h2{color:#172554;margin-top:0}
+input,select,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #ccc;border-radius:7px;font-size:15px}
+button{background:#172554;color:white;border:0;padding:13px 18px;border-radius:7px;font-size:16px;width:100%;cursor:pointer}
+button:hover{background:#263f85}
+.profile{border:1px solid #ddd;padding:14px;border-radius:9px;margin-top:12px}
+.profile a{display:inline-block;background:#172554;color:white;padding:9px 13px;text-decoration:none;border-radius:6px;margin-top:8px}
+footer{text-align:center;padding:25px;color:#666}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Emmawinner.com</h1>
+<p>Discover. Connect. Follow. Grow.</p>
+</header>
+
+<nav>
+<a href="#home">Home</a>
+<a href="#join">Join</a>
+<a href="#discover">Discover</a>
+</nav>
+
+<main id="home">
+
+<div class="card">
+<h2>Welcome to Emmawinner!</h2>
+<p>A community where people discover one another and grow their social media presence.</p>
+<p>Connect with creators on TikTok, YouTube, Facebook, Instagram and X.</p>
+</div>
+
+<div class="card" id="join">
+<h2>Add Your Social Media Profile</h2>
+<form id="profileForm">
+<input id="username" placeholder="Your name or username" required>
+
+<select id="platform" required>
+<option value="">Choose social media platform</option>
+<option>TikTok</option>
+<option>YouTube</option>
+<option>Facebook</option>
+<option>Instagram</option>
+<option>X (Twitter)</option>
+</select>
+
+<input id="profileUrl" type="url" placeholder="Paste your social media profile link" required>
+
+<textarea id="bio" placeholder="Tell people about yourself"></textarea>
+
+<button type="submit">Submit My Profile</button>
+</form>
+<p id="message"></p>
+</div>
+
+<div class="card" id="discover">
+<h2>Discover People</h2>
+<input id="search" placeholder="Search usernames..." oninput="filterProfiles()">
+<select id="filter" onchange="filterProfiles()">
+<option value="">All Platforms</option>
+<option>TikTok</option>
+<option>YouTube</option>
+<option>Facebook</option>
+<option>Instagram</option>
+<option>X (Twitter)</option>
+</select>
+<div id="profiles">Loading profiles...</div>
+</div>
+
+</main>
+
+<footer>
+<p>© 2026 Emmawinner.com</p>
+<p>Connect with the world. Grow together.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://qppbictsgfcuggplwxyi.supabase.co";
+const SUPABASE_KEY = "sb_publishable_b4s6CzPu246wYj9CEuckLg_LK7pkPAE";
+
+let db = null;
+let allProfiles = [];
+
+if (SUPABASE_URL.startsWith("https://") &&
+    SUPABASE_KEY.startsWith("sb_publishable_")) {
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+async function loadProfiles() {
+  const container = document.getElementById("profiles");
+
+  if (!db) {
+    container.textContent = "Database connection will be activated soon.";
+    return;
+  }
+
+  const {data, error} = await db
+    .from("profiles")
+    .select("*")
+    .order("created_at", {ascending:false});
+
+  if (error) {
+    container.textContent = "Unable to load profiles. Please check database settings.";
+    return;
+  }
+
+  allProfiles = data || [];
+  filterProfiles();
+}
+
+function filterProfiles() {
+  const search = document.getElementById("search").value.toLowerCase();
+  const platform = document.getElementById("filter").value;
+
+  const results = allProfiles.filter(p =>
+    (p.name || "").toLowerCase().includes(search) &&
+    (!platform || p.platform === platform)
+  );
+
+  const container = document.getElementById("profiles");
+  container.innerHTML = "";
+
+  if (!results.length) {
+    container.textContent = "No profiles found yet. Be the first to join!";
+    return;
+  }
+
+  results.forEach(p => {
+    const card = document.createElement("div");
+    card.className = "profile";
+
+    const name = document.createElement("h3");
+    name.textContent = p.name || "Creator";
+
+    const network = document.createElement("p");
+    network.textContent = p.platform || "";
+
+
+    const link = document.createElement("a");
+    link.textContent = "Visit Profile";
+    link.href = p.profile_url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+
+    card.append(name, network, link);
+    container.appendChild(card);
+  });
+}
+
+document.getElementById("profileForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const message = document.getElementById("message");
+
+  if (!db) {
+    message.textContent = "Database connection is not configured yet.";
+    return;
+  }
+
+  const profile = {
+    name: document.getElementById("username").value.trim(),
+    platform: document.getElementById("platform").value,
+    profile_url: document.getElementById("profileUrl").value.trim(),
+  };
+
+  message.textContent = "Submitting...";
+
+  const {error} = await db.from("profiles").insert([profile]);
+
+  if (error) {
+    message.textContent = "Submission failed. Please try again.";
+    return;
+  }
+
+  message.textContent = "Success! Your profile has been added.";
+  e.target.reset();
+  await loadProfiles();
+});
+
+loadProfiles();
+</script>
+</body>
+</html>
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emmawinner - Social Media Discovery</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6fb;
+      color: #222;
+    }
+    header {
+      background: #172554;
+      color: white;
+      text-align: center;
+      padding: 28px 15px;
+    }
+    header h1 { margin: 0; font-size: 32px; }
+    header p { margin-bottom: 0; }
+    nav {
+      background: #1e3a8a;
+      padding: 14px;
+      text-align: center;
+    }
+    nav a {
+      color: white;
+      margin: 0 10px;
+      text-decoration: none;
+    }
+    .container {
+      max-width: 850px;
+      margin: 25px auto;
+      padding: 15px;
+    }
+    .card {
+      background: white;
+      padding: 22px;
+      margin-bottom: 18px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #ddd;
+    }
+    input, select {
+      width: 100%;
+      padding: 13px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: 0;
+      padding: 13px 20px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+    .social a {
+      display: inline-block;
+      padding: 10px;
+      margin: 5px;
+      color: white;
+      background: #2563eb;
+      border-radius: 7px;
+      text-decoration: none;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      background: #172554;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Emmawinner</h1>
+    <p>Discover. Connect. Grow Together!</p>
+  </header>
+
+  <nav>
+    <a href="#home">Home</a>
+    <a href="#join">Join Us</a>
+    <a href="#discover">Discover</a>
+  </nav>
+
+  <div class="container" id="home">
+    <div class="card">
+      <h2>Welcome to Emmawinner!</h2>
+      <p>A community where content creators discover each other,
+      connect and grow their social media presence.</p>
+    </div>
+
+    <div class="card" id="join">
+      <h2>Join Our Community</h2>
+      <p>Share your social media profile with others.</p>
+      <form onsubmit="addProfile(event)">
+        <input id="name" placeholder="Your name" required>
+        <select id="platform" required>
+          <option value="">Choose a platform</option>
+          <option>TikTok</option>
+          <option>YouTube</option>
+          <option>Facebook</option>
+          <option>Instagram</option>
+          <option>X (Twitter)</option>
+        </select>
+        <input id="link" type="url" placeholder="Your profile link" required>
+        <button type="submit">Add My Profile</button>
+      </form>
+    </div>
+
+   <div class="card" id="discover">
+  <h2>Discover Creators</h2>
+  <div id="profiles">
+    <p>Loading creators...</p>
+  </div>
+</div> 
+  </div>
+
+  <footer>
+    <p>© 2026 Emmawinner.com</p>
+    <p>Discover. Connect. Grow Together!</p>
+  </footer>
+
+  <script>
+    function addProfile(event) {
+      event.preventDefault();
+      const name = document.getElementById("name").value;
+      const platform = document.getElementById("platform").value;
+      const link = document.getElementById("link").value;
+
+      const card = document.createElement("div");
+      const title = document.createElement("h3");
+      const description = document.createElement("p");
+      const button = document.createElement("a");
+
+      title.textContent = name;
+      description.textContent = platform;
+      button.textContent = "Visit Profile";
+      button.href = link;
+      button.target = "_blank";
+      button.rel = "noopener noreferrer";
+
+      card.append(title, description, button);
+      document.getElementById("profiles").appendChild(card);
+      event.target.reset();
+    }
+  </script>  
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+const SUPABASE_URL = "https://qppbictsgfcuggplwxyi.supabase.co";
+const SUPABASE_KEY = "sb_publishable_b4s6CzPu246wYj9CEuckLg_LK7pkPAE";
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+async function loadProfiles() {
+  const container = document.getElementById("profiles");
+
+  const platforms = [
+    "TikTok",
+    "YouTube",
+    "Facebook",
+    "Instagram",
+    "X (Twitter)"
+  ];
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*");
+
+  if (error) {
+    container.textContent = "Unable to load profiles. Please try again.";
+    console.error(error);
+    return;
+  }
+
+  container.innerHTML = "";
+
+  platforms.forEach(platform => {
+    const section = document.createElement("div");
+    const heading = document.createElement("h3");
+
+    heading.textContent = platform;
+    section.appendChild(heading);
+
+    const creators = (data || []).filter(
+      profile => profile.platform === platform
+    );
+
+    if (creators.length === 0) {
+      const message = document.createElement("p");
+      message.textContent =
+        "Be the first creator on " + platform + "!";
+      section.appendChild(message);
+    } else {
+      creators.forEach(profile => {
+        const name = document.createElement("p");
+        const link = document.createElement("a");
+
+        name.textContent = profile.name;
+        link.textContent = "Visit Profile";
+        link.href = profile.link;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        section.append(name, link);
+      });
+    }
+
+    container.appendChild(section);
+  });
+}
+
+loadProfiles().catch(error => {
+  document.getElementById("profiles").textContent =
+    "Loading error: " + error.message;
+  console.error(error);
+});
+
+</script>
+  
+</body>
+</html>
