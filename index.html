@@ -193,7 +193,63 @@ document.getElementById("profileForm").addEventListener("submit", async e => {
   await loadProfiles();
 });
 
-loadProfiles();
+function filterProfiles() {
+  const search = document.getElementById("search").value.toLowerCase();
+  const selectedPlatform = document.getElementById("filter").value;
+
+  const platforms = [
+    "TikTok",
+    "YouTube",
+    "Facebook",
+    "Instagram",
+    "X (Twitter)"
+  ];
+
+  const container = document.getElementById("profiles");
+  container.innerHTML = "";
+
+  platforms.forEach(platform => {
+    if (selectedPlatform && selectedPlatform !== platform) return;
+
+    const section = document.createElement("div");
+    section.className = "card";
+
+    const heading = document.createElement("h2");
+    heading.textContent = platform;
+    section.appendChild(heading);
+
+    const creators = allProfiles.filter(profile =>
+      profile.platform === platform &&
+      (profile.name || "").toLowerCase().includes(search)
+    );
+
+    if (creators.length === 0) {
+      const message = document.createElement("p");
+      message.textContent = "Be the first creator to join " + platform + "!";
+      section.appendChild(message);
+    } else {
+      creators.forEach(profile => {
+        const card = document.createElement("div");
+        card.className = "profile";
+
+        const name = document.createElement("h3");
+        name.textContent = profile.name || "Creator";
+
+        const link = document.createElement("a");
+        link.textContent = "Visit Profile";
+        link.href = profile.profile_url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        card.append(name, link);
+        section.appendChild(card);
+      });
+    }
+
+    container.appendChild(section);
+  });
+}
+
 </script>
 </body>
 </html>
