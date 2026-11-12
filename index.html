@@ -358,6 +358,66 @@ const supabase = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
+async function loadProfiles() {
+  const container = document.getElementById("profiles");
+
+  const platforms = [
+    "TikTok",
+    "YouTube",
+    "Facebook",
+    "Instagram",
+    "X (Twitter)"
+  ];
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*");
+
+  if (error) {
+    container.textContent = "Unable to load profiles. Please try again.";
+    console.error(error);
+    return;
+  }
+
+  container.innerHTML = "";
+
+  platforms.forEach(platform => {
+    const section = document.createElement("div");
+    const heading = document.createElement("h3");
+
+    heading.textContent = platform;
+    section.appendChild(heading);
+
+    const creators = (data || []).filter(
+      profile => profile.platform === platform
+    );
+
+    if (creators.length === 0) {
+      const message = document.createElement("p");
+      message.textContent =
+        "Be the first creator on " + platform + "!";
+      section.appendChild(message);
+    } else {
+      creators.forEach(profile => {
+        const name = document.createElement("p");
+        const link = document.createElement("a");
+
+        name.textContent = profile.name;
+        link.textContent = "Visit Profile";
+        link.href = profile.link;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        section.append(name, link);
+      });
+    }
+
+    container.appendChild(section);
+  });
+}
+
+loadProfiles();
+
 </script>
   
 </body>
