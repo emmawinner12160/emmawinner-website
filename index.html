@@ -229,7 +229,11 @@ const supabase = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_KEY
 );
-
+if (!window.supabase) {
+  document.getElementById("profiles").textContent =
+    "Supabase library is not available. Please refresh the page.";
+  throw new Error("Supabase library not loaded");
+}
 
 // SOCIAL MEDIA PLATFORMS
 
