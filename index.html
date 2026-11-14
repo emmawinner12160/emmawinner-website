@@ -256,9 +256,20 @@ async function loadProfiles() {
 
   container.textContent = "Loading creators...";
 
-  const { data, error } = await supabase
+ const result = await Promise.race([
+  supabase
     .from("profiles")
-    .select("name, platform, link");
+    .select("name, platform, link"),
+
+  new Promise((_, reject) =>
+    setTimeout(
+      () => reject(new Error("Supabase connection timed out")),
+      10000
+    )
+  )
+]);
+
+const { data, error } = result; 
 
   if (error) {
     console.error("Supabase error:", error);
