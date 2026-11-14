@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Emmawinner - Social Media Discovery</title>
 
   <style>
@@ -106,6 +105,14 @@
       color: #dc2626;
     }
 
+    .notice {
+      background: #fff7ed;
+      color: #9a3412;
+      padding: 12px;
+      border-radius: 7px;
+      margin: 12px 0;
+    }
+
     footer {
       text-align: center;
       padding: 20px;
@@ -196,9 +203,11 @@
       <option value="X (Twitter)">X (Twitter)</option>
     </select>
 
-    <div id="profiles">
-      <p>Loading creators...</p>
-    </div>
+    <p id="connectionMessage" class="message">
+      Connecting to the creator database...
+    </p>
+
+    <div id="profiles"></div>
 
   </div>
 
@@ -209,15 +218,12 @@
   <p>Discover. Connect. Grow Together!</p>
 </footer>
 
-<!-- Supabase library: load only once -->
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-  onerror="document.getElementById('profiles').textContent='Supabase library failed to load. Please check your internet connection.';"
-></script>
+<!-- Load Supabase once -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 
-// SUPABASE CONNECTION
+// SUPABASE SETTINGS
 
 const SUPABASE_URL =
   "https://qppbictsgfcuggplwxyi.supabase.co";
@@ -225,15 +231,6 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   "sb_publishable_b4s6CzPu246wYj9CEuckLg_LK7pkPAE";
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-if (!window.supabase) {
-  document.getElementById("profiles").textContent =
-    "Supabase library is not available. Please refresh the page.";
-  throw new Error("Supabase library not loaded");
-}
 
 // SOCIAL MEDIA PLATFORMS
 
@@ -246,50 +243,21 @@ const platforms = [
 ];
 
 let allProfiles = [];
+let supabase = null;
 
 
-// LOAD PROFILES FROM SUPABASE
+// PAGE ELEMENTS
 
-async function loadProfiles() {
+const profilesContainer =
+  document.getElementById("profiles");
 
-  const container = document.getElementById("profiles");
-
-  container.textContent = "Loading creators...";
-
- const result = await Promise.race([
-  supabase
-    .from("profiles")
-    .select("name, platform, link"),
-
-  new Promise((_, reject) =>
-    setTimeout(
-      () => reject(new Error("Supabase connection timed out")),
-      10000
-    )
-  )
-]);
-
-const { data, error } = result; 
-
-  if (error) {
-    console.error("Supabase error:", error);
-    container.textContent =
-      "Unable to load creators. Please check your database permissions.";
-    return;
-  }
-
-  allProfiles = data || [];
-
-  displayProfiles();
-
-}
+const connectionMessage =
+  document.getElementById("connectionMessage");
 
 
-// DISPLAY AND FILTER CREATORS
+// SHOW ALL PLATFORMS FIRST
 
 function displayProfiles() {
-
-  const container = document.getElementById("profiles");
 
   const search = document
     .getElementById("search")
@@ -298,7 +266,7 @@ function displayProfiles() {
   const selectedPlatform =
     document.getElementById("filter").value;
 
-  container.innerHTML = "";
+  profilesContainer.innerHTML = "";
 
   platforms.forEach(platform => {
 
@@ -327,10 +295,9 @@ function displayProfiles() {
 
       const message = document.createElement("p");
 
-      message.textContent =
-        search
-          ? "No matching creators found."
-          : "Be the first creator on " + platform + "!";
+      message.textContent = search
+        ? "No matching creators found."
+        : "Be the first creator on " + platform + "!";
 
       section.appendChild(message);
 
@@ -346,15 +313,16 @@ function displayProfiles() {
 
         const link = document.createElement("a");
         link.textContent = "Visit Profile";
-        
+
         try {
+
           const profileURL = new URL(profile.link);
 
           if (
             profileURL.protocol !== "https:" &&
             profileURL.protocol !== "http:"
           ) {
-            throw new Error("Invalid profile URL");
+            throw new Error("Invalid profile link");
           }
 
           link.href = profileURL.href;
@@ -362,8 +330,9 @@ function displayProfiles() {
           link.rel = "noopener noreferrer";
 
         } catch (error) {
+
           link.textContent = "Invalid profile link";
-          link.removeAttribute("href");
+
         }
 
         card.appendChild(name);
@@ -375,14 +344,113 @@ function displayProfiles() {
 
     }
 
-    container.appendChild(section);
+    profilesContainer.appendChild(section);
 
   });
 
 }
 
 
-// REGISTER NEW CREATOR
+// CONNECT TO SUPABASE
+
+function connectSupabase() {
+
+  if (!window.supabase || !window.supabase.createClient) {
+
+    connectionMessage.textContent =
+      "The database library could not load. Please check your internet connection and refresh.";
+
+    connectionMessage.className = "message error";
+
+    return false;
+
+  }
+
+  supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+  return true;
+
+}
+
+
+// LOAD PROFILES FROM DATABASE
+
+async function loadProfiles() {
+
+  connectionMessage.textContent =
+    "Loading creators from the database...";
+
+  connectionMessage.className = "message";
+
+  if (!supabase) {
+
+    connectionMessage.textContent =
+      "Database connection is not available.";
+
+    connectionMessage.className = "message error";
+
+    displayProfiles();
+    return;
+
+  }
+
+  let timeoutId;
+
+  try {
+
+    const result = await Promise.race([
+
+      supabase
+        .from("profiles")
+        .select("name, platform, link"),
+
+      new Promise((_, reject) => {
+
+        timeoutId = setTimeout(() => {
+          reject(new Error("Database connection timed out."));
+        }, 15000);
+
+      })
+
+    ]);
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    allProfiles = result.data || [];
+
+    connectionMessage.textContent =
+      "Creators loaded successfully.";
+
+    connectionMessage.className = "message success";
+
+    displayProfiles();
+
+  } catch (error) {
+
+    console.error("Loading error:", error);
+
+    connectionMessage.textContent =
+      "Could not load creators. Check your Supabase database permissions and internet connection.";
+
+    connectionMessage.className = "message error";
+
+    displayProfiles();
+
+  } finally {
+
+    clearTimeout(timeoutId);
+
+  }
+
+}
+
+
+// REGISTER A NEW CREATOR
 
 async function addProfile(event) {
 
@@ -400,17 +468,29 @@ async function addProfile(event) {
     .getElementById("link")
     .value.trim();
 
-  const message = document.getElementById("formMessage");
+  const message =
+    document.getElementById("formMessage");
 
-  const button = document.getElementById("submitButton");
+  const button =
+    document.getElementById("submitButton");
 
   message.textContent = "";
   message.className = "message";
 
+  if (!name) {
+
+    message.textContent = "Please enter your name.";
+    message.classList.add("error");
+    return;
+
+  }
+
   if (!platforms.includes(platform)) {
+
     message.textContent = "Please choose a valid platform.";
     message.classList.add("error");
     return;
+
   }
 
   let profileURL;
@@ -428,7 +508,19 @@ async function addProfile(event) {
 
   } catch (error) {
 
-    message.textContent = "Please enter a valid profile link.";
+    message.textContent =
+      "Please enter a valid profile link starting with https:// or http://.";
+
+    message.classList.add("error");
+    return;
+
+  }
+
+  if (!supabase) {
+
+    message.textContent =
+      "Database connection is unavailable. Please refresh the page.";
+
     message.classList.add("error");
     return;
 
@@ -467,7 +559,7 @@ async function addProfile(event) {
     console.error("Registration error:", error);
 
     message.textContent =
-      "Unable to save your profile. Please try again.";
+      "Unable to save your profile. Please check your database permissions.";
 
     message.classList.add("error");
 
@@ -481,7 +573,7 @@ async function addProfile(event) {
 }
 
 
-// CONNECT FORM AND SEARCH
+// FORM, SEARCH AND FILTER EVENTS
 
 document
   .getElementById("profileForm")
@@ -496,14 +588,13 @@ document
   .addEventListener("change", displayProfiles);
 
 
-// START WEBSITE
+// START THE WEBSITE
 
-loadProfiles().catch(error => {
-  console.error(error);
+displayProfiles();
 
-  document.getElementById("profiles").textContent =
-    "Something went wrong while loading creators.";
-});
+if (connectSupabase()) {
+  loadProfiles();
+}
 
 </script>
 
