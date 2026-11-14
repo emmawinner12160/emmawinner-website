@@ -210,7 +210,10 @@
 </footer>
 
 <!-- Supabase library: load only once -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+  onerror="document.getElementById('profiles').textContent='Supabase library failed to load. Please check your internet connection.';"
+></script>
 
 <script>
 
