@@ -1,3 +1,493 @@
 
 <!DOCTYPE html>
-<html la
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Emmawinner - Social Media Discovery</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6fb;
+      color: #222;
+    }
+
+    header {
+      background: #172554;
+      color: white;
+      text-align: center;
+      padding: 28px 15px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    nav {
+      background: #1e3a8a;
+      padding: 14px;
+      text-align: center;
+    }
+
+    nav a {
+      color: white;
+      margin: 0 10px;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 850px;
+      margin: 25px auto;
+      padding: 15px;
+    }
+
+    .card {
+      background: white;
+      padding: 22px;
+      margin-bottom: 18px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #ddd;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 13px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 7px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: 0;
+      padding: 13px 20px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .creator {
+      background: #f4f6fb;
+      padding: 15px;
+      margin: 12px 0;
+      border-radius: 8px;
+    }
+
+    .creator a {
+      color: #2563eb;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .platform-section {
+      margin-top: 20px;
+    }
+
+    .message {
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    .success {
+      color: green;
+    }
+
+    .error {
+      color: #dc2626;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      background: #172554;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Emmawinner</h1>
+  <p>Discover. Connect. Grow Together!</p>
+</header>
+
+<nav>
+  <a href="#home">Home</a>
+  <a href="#join">Join Us</a>
+  <a href="#discover">Discover</a>
+</nav>
+
+<div class="container" id="home">
+
+  <div class="card">
+    <h2>Welcome to Emmawinner!</h2>
+    <p>
+      A community where content creators discover each other,
+      connect and grow their social media presence.
+    </p>
+  </div>
+
+  <div class="card" id="join">
+    <h2>Join Our Community</h2>
+    <p>Share your social media profile with others.</p>
+
+    <form id="profileForm">
+
+      <input
+        id="name"
+        type="text"
+        placeholder="Your name"
+        required
+        maxlength="100"
+      >
+
+      <select id="platform" required>
+        <option value="">Choose a platform</option>
+        <option value="TikTok">TikTok</option>
+        <option value="YouTube">YouTube</option>
+        <option value="Facebook">Facebook</option>
+        <option value="Instagram">Instagram</option>
+        <option value="X (Twitter)">X (Twitter)</option>
+      </select>
+
+      <input
+        id="link"
+        type="url"
+        placeholder="Your profile link (https://...)"
+        required
+      >
+
+      <button id="submitButton" type="submit">
+        Add My Profile
+      </button>
+
+      <p id="formMessage" class="message"></p>
+
+    </form>
+  </div>
+
+  <div class="card" id="discover">
+
+    <h2>Discover Creators</h2>
+
+    <input
+      type="search"
+      id="search"
+      placeholder="Search creators by name..."
+    >
+
+    <select id="filter">
+      <option value="">All Platforms</option>
+      <option value="TikTok">TikTok</option>
+      <option value="YouTube">YouTube</option>
+      <option value="Facebook">Facebook</option>
+      <option value="Instagram">Instagram</option>
+      <option value="X (Twitter)">X (Twitter)</option>
+    </select>
+
+    <div id="profiles">
+      <p>Loading creators...</p>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  <p>© 2026 Emmawinner.com</p>
+  <p>Discover. Connect. Grow Together!</p>
+</footer>
+
+<!-- Supabase library: load only once -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+// SUPABASE CONNECTION
+
+const SUPABASE_URL =
+  "https://qppbictsgfcuggplwxyi.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_b4s6CzPu246wYj9CEuckLg_LK7pkPAE";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+
+// SOCIAL MEDIA PLATFORMS
+
+const platforms = [
+  "TikTok",
+  "YouTube",
+  "Facebook",
+  "Instagram",
+  "X (Twitter)"
+];
+
+let allProfiles = [];
+
+
+// LOAD PROFILES FROM SUPABASE
+
+async function loadProfiles() {
+
+  const container = document.getElementById("profiles");
+
+  container.textContent = "Loading creators...";
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("name, platform, link");
+
+  if (error) {
+    console.error("Supabase error:", error);
+    container.textContent =
+      "Unable to load creators. Please check your database permissions.";
+    return;
+  }
+
+  allProfiles = data || [];
+
+  displayProfiles();
+
+}
+
+
+// DISPLAY AND FILTER CREATORS
+
+function displayProfiles() {
+
+  const container = document.getElementById("profiles");
+
+  const search = document
+    .getElementById("search")
+    .value.toLowerCase().trim();
+
+  const selectedPlatform =
+    document.getElementById("filter").value;
+
+  container.innerHTML = "";
+
+  platforms.forEach(platform => {
+
+    if (selectedPlatform && selectedPlatform !== platform) {
+      return;
+    }
+
+    const section = document.createElement("div");
+    section.className = "platform-section";
+
+    const heading = document.createElement("h3");
+    heading.textContent = platform;
+
+    section.appendChild(heading);
+
+    const creators = allProfiles.filter(profile => {
+
+      return (
+        profile.platform === platform &&
+        (profile.name || "").toLowerCase().includes(search)
+      );
+
+    });
+
+    if (creators.length === 0) {
+
+      const message = document.createElement("p");
+
+      message.textContent =
+        search
+          ? "No matching creators found."
+          : "Be the first creator on " + platform + "!";
+
+      section.appendChild(message);
+
+    } else {
+
+      creators.forEach(profile => {
+
+        const card = document.createElement("div");
+        card.className = "creator";
+
+        const name = document.createElement("h4");
+        name.textContent = profile.name || "Creator";
+
+        const link = document.createElement("a");
+        link.textContent = "Visit Profile";
+        
+        try {
+          const profileURL = new URL(profile.link);
+
+          if (
+            profileURL.protocol !== "https:" &&
+            profileURL.protocol !== "http:"
+          ) {
+            throw new Error("Invalid profile URL");
+          }
+
+          link.href = profileURL.href;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+
+        } catch (error) {
+          link.textContent = "Invalid profile link";
+          link.removeAttribute("href");
+        }
+
+        card.appendChild(name);
+        card.appendChild(link);
+
+        section.appendChild(card);
+
+      });
+
+    }
+
+    container.appendChild(section);
+
+  });
+
+}
+
+
+// REGISTER NEW CREATOR
+
+async function addProfile(event) {
+
+  event.preventDefault();
+
+  const name = document
+    .getElementById("name")
+    .value.trim();
+
+  const platform = document
+    .getElementById("platform")
+    .value;
+
+  const link = document
+    .getElementById("link")
+    .value.trim();
+
+  const message = document.getElementById("formMessage");
+
+  const button = document.getElementById("submitButton");
+
+  message.textContent = "";
+  message.className = "message";
+
+  if (!platforms.includes(platform)) {
+    message.textContent = "Please choose a valid platform.";
+    message.classList.add("error");
+    return;
+  }
+
+  let profileURL;
+
+  try {
+
+    profileURL = new URL(link);
+
+    if (
+      profileURL.protocol !== "https:" &&
+      profileURL.protocol !== "http:"
+    ) {
+      throw new Error("Invalid URL");
+    }
+
+  } catch (error) {
+
+    message.textContent = "Please enter a valid profile link.";
+    message.classList.add("error");
+    return;
+
+  }
+
+  button.disabled = true;
+  button.textContent = "Saving...";
+
+  try {
+
+    const { error } = await supabase
+      .from("profiles")
+      .insert([
+        {
+          name: name,
+          platform: platform,
+          link: profileURL.href
+        }
+      ]);
+
+    if (error) {
+      throw error;
+    }
+
+    message.textContent =
+      "Your profile has been added successfully!";
+
+    message.classList.add("success");
+
+    document.getElementById("profileForm").reset();
+
+    await loadProfiles();
+
+  } catch (error) {
+
+    console.error("Registration error:", error);
+
+    message.textContent =
+      "Unable to save your profile. Please try again.";
+
+    message.classList.add("error");
+
+  } finally {
+
+    button.disabled = false;
+    button.textContent = "Add My Profile";
+
+  }
+
+}
+
+
+// CONNECT FORM AND SEARCH
+
+document
+  .getElementById("profileForm")
+  .addEventListener("submit", addProfile);
+
+document
+  .getElementById("search")
+  .addEventListener("input", displayProfiles);
+
+document
+  .getElementById("filter")
+  .addEventListener("change", displayProfiles);
+
+
+// START WEBSITE
+
+loadProfiles().catch(error => {
+  console.error(error);
+
+  document.getElementById("profiles").textContent =
+    "Something went wrong while loading creators.";
+});
+
+</script>
+
+</body>
+</html>
