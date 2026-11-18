@@ -405,7 +405,7 @@ async function loadProfiles() {
 
       supabase
         .from("profiles")
-        .select("name, platform, link"),
+        .select("name, platform, profile_url")
 
       new Promise((_, reject) => {
 
