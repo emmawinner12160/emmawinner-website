@@ -533,13 +533,13 @@ async function addProfile(event) {
 
     const { error } = await supabase
       .from("profiles")
-      .insert([
-        {
-          name: name,
-          platform: platform,
-          link: profileURL.href
-        }
-      ]);
+  .insert([
+  {
+    name: name,
+    platform: platform,
+    profile_url: profileURL.href
+  }
+]);  
 
     if (error) {
       throw error;
